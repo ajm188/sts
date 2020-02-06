@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync/atomic"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/urfave/cli/v2"
@@ -60,6 +61,17 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 	if err != nil {
 		return err
 	}
+
+	calibrationErrors := make(chan error)
+
+	go func(calibrationErrors chan error) {
+		err := this.Calibrate(sqsAPI)
+		if err != nil {
+			calibrationErrors <- err
+		}
+
+		time.Sleep(time.Duration(this.calibrationRate) * time.Second)
+	}(calibrationErrors)
 
 	return nil
 }
