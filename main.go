@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path"
 
@@ -51,5 +52,10 @@ func main() {
 
 			return nil
 		},
+	}
+
+	err = app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
