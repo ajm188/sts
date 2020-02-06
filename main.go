@@ -8,6 +8,11 @@ import (
 )
 
 func main() {
+	workDir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -23,12 +28,12 @@ func main() {
 			&cli.StringFlag{
 				Name:     "twitter-key",
 				Usage:    "",
-				FilePath: path.Join(os.Getwd(), ".twitter", "key"),
+				FilePath: path.Join(workDir, ".twitter", "key"),
 			},
 			&cli.StringFlag{
 				Name:     "twitter-token",
 				Usage:    "",
-				FilePath: path.Join(os.Getwd(), ".twitter", "token"),
+				FilePath: path.Join(workDir, ".twitter", "token"),
 			},
 			&cli.IntFlag{
 				Name:  "calibration-rate",
