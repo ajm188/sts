@@ -18,10 +18,10 @@ func ParseArgs(c *cli.Context) (*RunArgs, error) {
 	handle := c.Value("handle").(string)
 
 	twitterCreds := &TwitterCreds{
-		consumerKey: c.Value("twitter-key").(string),
+		consumerKey:    c.Value("twitter-key").(string),
 		consumerSecret: c.Value("twitter-consumer-secret").(string),
-		accessToken: c.Value("twitter-token").(string),
-		accessSecret: c.Value("twitter-access-secret").(string),
+		accessToken:    c.Value("twitter-token").(string),
+		accessSecret:   c.Value("twitter-access-secret").(string),
 	}
 
 	calibrationRate := c.Value("calibration-rate").(int)

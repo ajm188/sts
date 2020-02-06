@@ -8,10 +8,10 @@ import (
 )
 
 type TwitterCreds struct {
-	consumerKey string
+	consumerKey    string
 	consumerSecret string
-	accessToken string
-	accessSecret string
+	accessToken    string
+	accessSecret   string
 }
 
 type StatusService interface {
