@@ -149,6 +149,10 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 		return "", err
 	}
 
+	if tweetText == "" {
+		return "", nil
+	}
+
 	tweet, resp, err := twitter.GetStatusService().Update(tweetText, nil)
 	if err != nil {
 		return tweetText, err
