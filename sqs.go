@@ -6,4 +6,5 @@ import (
 
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
+	Recieve() (string, error)
 } // TODO: implement this

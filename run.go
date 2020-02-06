@@ -63,6 +63,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 	}
 
 	calibrationErrors := make(chan error)
+	tweetErrors := make(chan error)
 
 	go func(calibrationErrors chan error) {
 		for true {
@@ -74,6 +75,33 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 			time.Sleep(time.Duration(this.calibrationRate) * time.Second)
 		}
 	}(calibrationErrors)
+
+	go func(tweetErrors chan error) {
+		for true {
+			tweet, err := this.Tweet(twitter, sqsAPI)
+			if err != nil {
+				if tweet != "" {
+					// TODO: log the tweet text so we don't lose it forever
+				}
+				tweetErrors <- err
+			}
+
+			tweetSleepTime := atomic.LoadInt64(&this.tweetRate)
+			time.Sleep(time.Duration(tweetSleepTime) * time.Second)
+		}
+	}(tweetErrors)
+
+	for true {
+		select {
+		case calibrationErr := <-calibrationErrors:
+			return calibrationErr
+		case tweetErr := <-tweetErrors:
+			return tweetErr
+		default:
+		}
+
+		time.Sleep(5 * time.Second)
+	}
 
 	return nil
 }
@@ -112,4 +140,19 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 
 	atomic.StoreInt64(&this.tweetRate, int64(retention/backlog))
 	return nil
+}
+
+func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
+	tweetText, err := sqs.Recieve()
+
+	if err != nil {
+		return "", err
+	}
+
+	tweet, resp, err := twitter.GetStatusService().Update(tweetText, nil)
+	if err != nil {
+		return tweetText, err
+	}
+
+	return tweetText, nil
 }
