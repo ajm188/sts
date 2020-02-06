@@ -42,16 +42,16 @@ func ParseArgs(c *cli.Context) (*RunArgs, error) {
 }
 
 type Service struct {
-	queueName string
+	queueName       string
 	calibrationRate int
-	tweetRate int64
+	tweetRate       int64
 }
 
 func NewService(args *RunArgs) *Service {
 	return &Service{
-		queueName: args.queue,
+		queueName:       args.queue,
 		calibrationRate: args.calibrationRate,
-		tweetRate: 0,
+		tweetRate:       0,
 	}
 }
 
@@ -96,6 +96,6 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 		return err
 	}
 
-	atomic.StoreInt64(&this.tweetRate, int64(retention / backlog))
+	atomic.StoreInt64(&this.tweetRate, int64(retention/backlog))
 	return nil
 }
