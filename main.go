@@ -60,7 +60,10 @@ func main() {
 				return err
 			}
 
-			return nil
+			twitter := NewTwitter(args.twitter)
+			var sqs SQS = nil // TODO: implement SQS wrapper
+
+			return NewService(args).RunForever(twitter, sqs)
 		},
 	}
 
