@@ -9,8 +9,7 @@ import (
 type RunArgs struct {
 	queue           string
 	handle          string
-	twitterKey      string
-	twitterToken    string
+	twitter         *TwitterCreds
 	calibrationRate int
 }
 
@@ -18,8 +17,12 @@ func ParseArgs(c *cli.Context) (*RunArgs, error) {
 	queue := c.Value("queue").(string)
 	handle := c.Value("handle").(string)
 
-	twitterKey := c.Value("twitter-key").(string)
-	twitterToken := c.Value("twitter-token").(string)
+	twitterCreds := &TwitterCreds{
+		consumerKey: c.Value("twitter-key").(string),
+		consumerSecret: c.Value("twitter-consumer-secret").(string),
+		accessToken: c.Value("twitter-token").(string),
+		accessSecret: c.Value("twitter-access-secret").(string),
+	}
 
 	calibrationRate := c.Value("calibration-rate").(int)
 
@@ -30,8 +33,7 @@ func ParseArgs(c *cli.Context) (*RunArgs, error) {
 	return &RunArgs{
 		queue:           queue,
 		handle:          handle,
-		twitterKey:      twitterKey,
-		twitterToken:    twitterToken,
+		twitter:         twitterCreds,
 		calibrationRate: calibrationRate,
 	}, nil
 }

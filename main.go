@@ -32,9 +32,19 @@ func main() {
 				FilePath: path.Join(workDir, ".twitter", "key"),
 			},
 			&cli.StringFlag{
+				Name:     "twitter-consumer-secret",
+				Usage:    "",
+				FilePath: path.Join(workDir, ".twitter", "consumer-secret"),
+			},
+			&cli.StringFlag{
 				Name:     "twitter-token",
 				Usage:    "",
 				FilePath: path.Join(workDir, ".twitter", "token"),
+			},
+			&cli.StringFlag{
+				Name:     "twitter-access-secret",
+				Usage:    "",
+				FilePath: path.Join(workDir, ".twitter", "access-secret"),
 			},
 			&cli.IntFlag{
 				Name:  "calibration-rate",
