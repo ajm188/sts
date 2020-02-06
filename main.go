@@ -42,21 +42,14 @@ func main() {
 			},
 		},
 
-		Commands: []*cli.Commands{
-			{
-				Name:    "run",
-				Aliases: []string{"r"},
-				Usage:   "Run the STS service",
-				Action: func(c *cli.Context) error {
-					args, err := ParseArgs(c)
+		Action: func(c *cli.Context) error {
+			args, err := ParseArgs(c)
 
-					if err != nil {
-						return err
-					}
+			if err != nil {
+				return err
+			}
 
-					return nil
-				},
-			},
+			return nil
 		},
 	}
 }
