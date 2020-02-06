@@ -143,7 +143,7 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 }
 
 func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
-	tweetText, err := sqs.Recieve()
+	tweetText, err := sqs.Recieve(this.queueName)
 
 	if err != nil {
 		return "", err
