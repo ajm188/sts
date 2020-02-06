@@ -65,12 +65,14 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 	calibrationErrors := make(chan error)
 
 	go func(calibrationErrors chan error) {
-		err := this.Calibrate(sqsAPI)
-		if err != nil {
-			calibrationErrors <- err
-		}
+		for true {
+			err := this.Calibrate(sqsAPI)
+			if err != nil {
+				calibrationErrors <- err
+			}
 
-		time.Sleep(time.Duration(this.calibrationRate) * time.Second)
+			time.Sleep(time.Duration(this.calibrationRate) * time.Second)
+		}
 	}(calibrationErrors)
 
 	return nil
