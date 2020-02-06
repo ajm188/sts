@@ -17,7 +17,7 @@ func (this *SQSImpl) Recieve(queueURL string) (string, error) {
 	maxMessages := 1
 	resp, err := this.RecieveMessage(
 		&sqs.RecieveMessageInput{
-			QueueURL: &queueURL,
+			QueueURL:            &queueURL,
 			MaxNumberOfMessages: &maxMessages,
 		},
 	)
