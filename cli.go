@@ -46,7 +46,7 @@ type BatchUpdateArgs struct {
 	sqs       *SQSConfig
 	user      string
 	filename  string
-	delimeter string
+	delimiter string
 }
 
 func ParseBatchUpdateArgs(c *cli.Context) (*BatchUpdateArgs, error) {
@@ -54,7 +54,7 @@ func ParseBatchUpdateArgs(c *cli.Context) (*BatchUpdateArgs, error) {
 
 	user := c.Value("user").(string)
 	filename := c.Value("file").(string)
-	delimeter := c.Value("delimeter").(string)
+	delimiter := c.Value("delimiter").(string)
 
 	if err := unix.Access(filename, unix.R_OK); err != nil {
 		return nil, err
@@ -63,6 +63,6 @@ func ParseBatchUpdateArgs(c *cli.Context) (*BatchUpdateArgs, error) {
 		sqs:       sqsConfig,
 		user:      user,
 		filename:  filename,
-		delimeter: delimeter,
+		delimiter: delimiter,
 	}, nil
 }

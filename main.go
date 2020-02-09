@@ -65,7 +65,7 @@ func main() {
 						return err
 					}
 
-					log.Println("Initialing API components.")
+					log.Println("Initializing API components.")
 
 					twitter := NewTwitter(args.twitter)
 					sqs, err := NewSQS(args.sqs)
