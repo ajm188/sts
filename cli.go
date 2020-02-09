@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/urfave/cli/v2"
+	"golang.org/x/sys/unix"
 )
 
 type RunArgs struct {
@@ -12,12 +13,15 @@ type RunArgs struct {
 	calibrationRate int
 }
 
-func ParseRunArgs(c *cli.Context) (*RunArgs, error) {
-	sqsConfig := &SQSConfig{
+func getSQSConfig(c *cli.Context) *SQSConfig {
+	return &SQSConfig{
 		queueName: c.Value("queue").(string),
 		region:    c.Value("region").(string),
 	}
+}
 
+func ParseRunArgs(c *cli.Context) (*RunArgs, error) {
+	sqsConfig := getSQSConfig(c)
 	twitterCreds := &TwitterCreds{
 		consumerKey:    c.Value("twitter-key").(string),
 		consumerSecret: c.Value("twitter-consumer-secret").(string),
@@ -35,5 +39,30 @@ func ParseRunArgs(c *cli.Context) (*RunArgs, error) {
 		sqs:             sqsConfig,
 		twitter:         twitterCreds,
 		calibrationRate: calibrationRate,
+	}, nil
+}
+
+type BatchUpdateArgs struct {
+	sqs       *SQSConfig
+	user      string
+	filename  string
+	delimeter string
+}
+
+func ParseBatchUpdateArgs(c *cli.Context) (*BatchUpdateArgs, error) {
+	sqsConfig := getSQSConfig(c)
+
+	user := c.Value("user").(string)
+	filename := c.Value("file").(string)
+	delimeter := c.Value("delimeter").(string)
+
+	if err := unix.Access(filename, unix.R_OK); err != nil {
+		return nil, err
+	}
+	return &BatchUpdateArgs{
+		sqs:       sqsConfig,
+		user:      user,
+		filename:  filename,
+		delimeter: delimeter,
 	}, nil
 }
