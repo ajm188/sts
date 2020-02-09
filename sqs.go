@@ -98,12 +98,12 @@ func (this *SQSImpl) SendAll(messages []string, group string) error {
 	log.Printf("[sqs_sendall]: Sending %d messages in batches of 10.\n", len(messages))
 	for i := 0; i < len(messages); i += 10 {
 		entries := make([]*sqs.SendMessageBatchRequestEntry, 0)
-		for j := i; j < 10 && j < len(messages); j++ {
-			id := fmt.Sprintf("%d", i)
+		for j := 0; j < 10 && i + j < len(messages); j++ {
+			id := fmt.Sprintf("%d", i + j)
 			entry := &sqs.SendMessageBatchRequestEntry{
 				Id:             &id,
 				MessageGroupId: &group,
-				MessageBody:    &messages[j],
+				MessageBody:    &messages[i+j],
 			}
 			entries = append(entries, entry)
 		}
