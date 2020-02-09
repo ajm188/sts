@@ -1,23 +1,33 @@
 package main
 
 import (
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
-	Recieve(string) (string, error)
-} // TODO: implement this
+	Receive(string) (string, error)
+}
 
 type SQSImpl struct {
 	sqsClient *sqs.SQS
 }
 
-func (this *SQSImpl) Recieve(queueURL string) (string, error) {
-	maxMessages := 1
-	resp, err := this.RecieveMessage(
-		&sqs.RecieveMessageInput{
-			QueueURL:            &queueURL,
+func NewSQS() SQS {
+	sess := session.Must(session.NewSession())
+	return &SQSImpl{sqs.New(sess)}
+}
+
+func (this *SQSImpl) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error) {
+	return this.sqsClient.GetQueueAttributes(input)
+}
+
+func (this *SQSImpl) Receive(queueURL string) (string, error) {
+	var maxMessages int64 = 1
+	resp, err := this.sqsClient.ReceiveMessage(
+		&sqs.ReceiveMessageInput{
+			QueueUrl:            &queueURL,
 			MaxNumberOfMessages: &maxMessages,
 		},
 	)
