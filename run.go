@@ -153,7 +153,7 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 		return "", nil
 	}
 
-	tweet, resp, err := twitter.GetStatusService().Update(tweetText, nil)
+	_, _, err = twitter.GetStatusService().Update(tweetText, nil)
 	if err != nil {
 		return tweetText, err
 	}
