@@ -111,7 +111,22 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					return nil
+					args, err := ParseBatchUpdateArgs(c)
+					if err != nil {
+						return err
+					}
+
+					log.Println("Initializing API components.")
+					sqs, err := NewSQS(args.sqs)
+					if err != nil {
+						return err
+					}
+
+					tweetSource := &FileTweetProvider{
+						filename: args.filename,
+						delimiter: args.delimiter,
+					}
+					return BatchUpdate(sqs, tweetSource, args.user)
 				},
 			},
 		},
