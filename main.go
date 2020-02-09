@@ -74,7 +74,7 @@ func main() {
 		},
 	}
 
-	log.SetFlags(log.LUTC | log.Lmicroseconds | log.Lshortfile)
+	log.SetFlags(log.Ldate | log.LUTC | log.Lmicroseconds | log.Lshortfile)
 
 	err = app.Run(os.Args)
 	if err != nil {
