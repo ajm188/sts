@@ -17,7 +17,7 @@ type RunArgs struct {
 	calibrationRate int
 }
 
-func ParseArgs(c *cli.Context) (*RunArgs, error) {
+func ParseRunArgs(c *cli.Context) (*RunArgs, error) {
 	sqsConfig := &SQSConfig{
 		queueName: c.Value("queue").(string),
 		region:    c.Value("region").(string),

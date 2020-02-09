@@ -59,7 +59,7 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					args, err := ParseArgs(c)
+					args, err := ParseRunArgs(c)
 
 					if err != nil {
 						return err
