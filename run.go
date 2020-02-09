@@ -72,6 +72,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 				calibrationErrors <- err
 			}
 
+			log.Printf("Finished calibration iteration. Sleeping for %d seconds.\n", this.Calibrate)
 			time.Sleep(time.Duration(this.calibrationRate) * time.Second)
 		}
 	}(calibrationErrors)
@@ -87,6 +88,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 			}
 
 			tweetSleepTime := atomic.LoadInt64(&this.tweetRate)
+			log.Printf("Finished tweet iteration. Sleeping for %d seconds.\n", tweetSleepTime)
 			time.Sleep(time.Duration(tweetSleepTime) * time.Second)
 		}
 	}(tweetErrors)
@@ -100,7 +102,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 		default:
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(time.Second)
 	}
 
 	return nil
@@ -146,6 +148,7 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 }
 
 func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
+	log.Println("Getting a tweet from the queue.")
 	tweetText, err := sqs.Receive()
 
 	if err != nil {
@@ -153,9 +156,11 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 	}
 
 	if tweetText == "" {
+		log.Println("Got an empty message from the queue. Not tweeting that.")
 		return "", nil
 	}
 
+	log.Println("Posting a tweet.")
 	_, _, err = twitter.GetStatusService().Update(tweetText, nil)
 	if err != nil {
 		return tweetText, err
