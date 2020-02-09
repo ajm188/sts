@@ -72,7 +72,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 				calibrationErrors <- err
 			}
 
-			log.Printf("Finished calibration iteration. Sleeping for %d seconds.\n", this.Calibrate)
+			log.Printf("Finished calibration iteration. Sleeping for %d seconds.\n", this.calibrationRate)
 			time.Sleep(time.Duration(this.calibrationRate) * time.Second)
 		}
 	}(calibrationErrors)
