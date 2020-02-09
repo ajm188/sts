@@ -17,12 +17,12 @@ func main() {
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "queue, q",
+				Name:     "region, r",
 				Usage:    "",
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:     "handle",
+				Name:     "queue, q",
 				Usage:    "",
 				Required: true,
 			},
@@ -61,7 +61,7 @@ func main() {
 			}
 
 			twitter := NewTwitter(args.twitter)
-			sqs, err := NewSQS(args.queue)
+			sqs, err := NewSQS(args.sqs)
 			if err != nil {
 				return err
 			}

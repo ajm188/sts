@@ -11,15 +11,16 @@ import (
 )
 
 type RunArgs struct {
-	queue           string
-	handle          string
+	sqs             *SQSConfig
 	twitter         *TwitterCreds
 	calibrationRate int
 }
 
 func ParseArgs(c *cli.Context) (*RunArgs, error) {
-	queue := c.Value("queue").(string)
-	handle := c.Value("handle").(string)
+	sqsConfig := &SQSConfig{
+		queueName: c.Value("queue").(string),
+		region:    c.Value("region").(string),
+	}
 
 	twitterCreds := &TwitterCreds{
 		consumerKey:    c.Value("twitter-key").(string),
@@ -35,22 +36,19 @@ func ParseArgs(c *cli.Context) (*RunArgs, error) {
 	}
 
 	return &RunArgs{
-		queue:           queue,
-		handle:          handle,
+		sqs:             sqsConfig,
 		twitter:         twitterCreds,
 		calibrationRate: calibrationRate,
 	}, nil
 }
 
 type Service struct {
-	queueName       string
 	calibrationRate int
 	tweetRate       int64
 }
 
 func NewService(args *RunArgs) *Service {
 	return &Service{
-		queueName:       args.queue,
 		calibrationRate: args.calibrationRate,
 		tweetRate:       0,
 	}

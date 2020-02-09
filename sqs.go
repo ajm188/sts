@@ -1,9 +1,14 @@
 package main
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
+
+type SQSConfig struct {
+	queueName, region string
+}
 
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
@@ -15,13 +20,13 @@ type SQSImpl struct {
 	queueURL  string
 }
 
-func NewSQS(queue string) (SQS, error) {
+func NewSQS(conf *SQSConfig) (SQS, error) {
 	sess := session.Must(session.NewSession())
-	client := sqs.New(sess)
+	client := sqs.New(sess, &aws.Config{Region: aws.String(conf.region)})
 
 	output, err := client.GetQueueUrl(
 		&sqs.GetQueueUrlInput{
-			QueueName: &queue,
+			QueueName: &conf.queueName,
 		},
 	)
 	if err != nil {
