@@ -107,7 +107,7 @@ func (this *SQSImpl) SendAll(messages []string, group string) error {
 			}
 			entries = append(entries, entry)
 		}
-		log.Println("[sqs_sendall]: Sending 10 messages to SQS.")
+		log.Printf("[sqs_sendall]: Sending %d messages to SQS.\n", len(entries))
 		output, err := this.SendMessageBatch(&sqs.SendMessageBatchInput{
 			Entries: entries,
 		})
