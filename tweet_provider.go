@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"io/ioutil"
+	"log"
 	"strings"
 )
 
@@ -12,7 +12,7 @@ type TweetProvider interface {
 }
 
 type FileTweetProvider struct {
-	filename string
+	filename  string
 	delimiter string
 }
 
@@ -23,11 +23,10 @@ func (this *FileTweetProvider) All() ([]string, error) {
 		return []string{}, nil
 	}
 
-
 	splitTweets := strings.Split(string(bytes), this.delimiter)
 	tweets := make([]string, len(splitTweets))
 	for i, rawTweet := range splitTweets {
-		tweets[i] = rawTweet[:len(rawTweet) - 1]
+		tweets[i] = rawTweet[:len(rawTweet)-1]
 	}
 	return tweets, nil
 }

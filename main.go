@@ -123,7 +123,7 @@ func main() {
 					}
 
 					tweetSource := &FileTweetProvider{
-						filename: args.filename,
+						filename:  args.filename,
 						delimiter: args.delimiter,
 					}
 					return BatchUpdate(sqs, tweetSource, args.user)
