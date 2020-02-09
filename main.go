@@ -15,62 +15,67 @@ func main() {
 	}
 
 	app := &cli.App{
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "region, r",
-				Usage:    "",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "queue, q",
-				Usage:    "",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "twitter-key",
-				Usage:    "",
-				FilePath: path.Join(workDir, ".twitter", "key"),
-			},
-			&cli.StringFlag{
-				Name:     "twitter-consumer-secret",
-				Usage:    "",
-				FilePath: path.Join(workDir, ".twitter", "consumer-secret"),
-			},
-			&cli.StringFlag{
-				Name:     "twitter-token",
-				Usage:    "",
-				FilePath: path.Join(workDir, ".twitter", "token"),
-			},
-			&cli.StringFlag{
-				Name:     "twitter-access-secret",
-				Usage:    "",
-				FilePath: path.Join(workDir, ".twitter", "access-secret"),
-			},
-			&cli.IntFlag{
-				Name:  "calibration-rate",
-				Usage: "How often (in seconds), to update tweeting rate.",
-				Value: 600,
-			},
-		},
+		Commands: []*cli.Command{
+			{
+				Name: "run",
+				Usage: "run the sts daemon",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "region, r",
+						Usage:    "",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "queue, q",
+						Usage:    "",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "twitter-key",
+						Usage:    "",
+						FilePath: path.Join(workDir, ".twitter", "key"),
+					},
+					&cli.StringFlag{
+						Name:     "twitter-consumer-secret",
+						Usage:    "",
+						FilePath: path.Join(workDir, ".twitter", "consumer-secret"),
+					},
+					&cli.StringFlag{
+						Name:     "twitter-token",
+						Usage:    "",
+						FilePath: path.Join(workDir, ".twitter", "token"),
+					},
+					&cli.StringFlag{
+						Name:     "twitter-access-secret",
+						Usage:    "",
+						FilePath: path.Join(workDir, ".twitter", "access-secret"),
+					},
+					&cli.IntFlag{
+						Name:  "calibration-rate",
+						Usage: "How often (in seconds), to update tweeting rate.",
+						Value: 600,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					args, err := ParseArgs(c)
 
-		Action: func(c *cli.Context) error {
-			args, err := ParseArgs(c)
+					if err != nil {
+						return err
+					}
 
-			if err != nil {
-				return err
-			}
+					log.Println("Initialing API components.")
 
-			log.Println("Initialing API components.")
+					twitter := NewTwitter(args.twitter)
+					sqs, err := NewSQS(args.sqs)
+					if err != nil {
+						return err
+					}
 
-			twitter := NewTwitter(args.twitter)
-			sqs, err := NewSQS(args.sqs)
-			if err != nil {
-				return err
-			}
+					log.Println("Running forever ....")
 
-			log.Println("Running forever ....")
-
-			return NewService(args).RunForever(twitter, sqs)
+					return NewService(args).RunForever(twitter, sqs)
+				},
+			},
 		},
 	}
 
