@@ -17,16 +17,18 @@ func main() {
 	app := &cli.App{
 		Commands: []*cli.Command{
 			{
-				Name: "run",
+				Name:  "run",
 				Usage: "run the sts daemon",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:     "region, r",
+						Name:     "region",
+						Aliases:  []string{"r"},
 						Usage:    "",
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:     "queue, q",
+						Name:     "queue",
+						Aliases:  []string{"q"},
 						Usage:    "",
 						Required: true,
 					},
