@@ -118,7 +118,6 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 				&numMessagesAttribute,
 				&retentionAttribute,
 			},
-			QueueUrl: &this.queueName, // TODO: we currently pass the name, and we need a way to get the URL
 		},
 	)
 
@@ -143,7 +142,7 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 }
 
 func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
-	tweetText, err := sqs.Receive(this.queueName)
+	tweetText, err := sqs.Receive()
 
 	if err != nil {
 		return "", err
