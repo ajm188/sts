@@ -160,11 +160,5 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 		return "", nil
 	}
 
-	log.Println("Posting a tweet.")
-	_, _, err = twitter.GetStatusService().Update(tweetText, nil)
-	if err != nil {
-		return tweetText, err
-	}
-
-	return tweetText, nil
+	return twitter.Tweet(tweetText, nil)
 }
