@@ -64,9 +64,24 @@ func (this *SQSImpl) Receive() (string, error) {
 
 	messages := resp.Messages
 	if len(messages) > 0 {
-		log.Println("[sqs_receive]: Message received.")
-		return *messages[0].Body, nil
+		log.Println("[sqs_receive]: Message received. Deleting message from queue.")
+		message := messages[0]
+		err := this.DeleteMessage(message.ReceiptHandle)
+		if err != nil {
+			return "", err
+		}
+		return *message.Body, nil
 	}
 	log.Println("[sqs_receive]: No message received from queue.")
 	return "", nil
+}
+
+func (this *SQSImpl) DeleteMessage(receiptHandle *string) error {
+	_, err := this.sqsClient.DeleteMessage(
+		&sqs.DeleteMessageInput{
+			QueueUrl:      &this.queueURL,
+			ReceiptHandle: receiptHandle,
+		},
+	)
+	return err
 }
