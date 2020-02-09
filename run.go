@@ -138,7 +138,7 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 	if err != nil {
 		return err
 	}
-	tweetRate := int64(retention / backlog)
+	tweetRate := int64(retention / (backlog * 10))
 	log.Printf("[calibration]: Found %d messages in the backlog.\n", backlog)
 	log.Printf("[calibration]: Message retention period is %d.\n", retention)
 	log.Printf("[calibration]: Setting tweet rate to %d.\n", tweetRate)
