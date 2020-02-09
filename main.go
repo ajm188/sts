@@ -60,15 +60,21 @@ func main() {
 				return err
 			}
 
+			log.Println("Initialing API components.")
+
 			twitter := NewTwitter(args.twitter)
 			sqs, err := NewSQS(args.sqs)
 			if err != nil {
 				return err
 			}
 
+			log.Println("Running forever ....")
+
 			return NewService(args).RunForever(twitter, sqs)
 		},
 	}
+
+	log.SetFlags(log.LUTC | log.Lmicroseconds | log.Lshortfile)
 
 	err = app.Run(os.Args)
 	if err != nil {

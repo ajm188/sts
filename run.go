@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -55,6 +56,7 @@ func NewService(args *RunArgs) *Service {
 }
 
 func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
+	log.Println("Performing initial calibration.")
 	err := this.Calibrate(sqsAPI)
 	if err != nil {
 		return err
@@ -134,8 +136,12 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 	if err != nil {
 		return err
 	}
+	tweetRate := int64(retention / backlog)
+	log.Printf("[calibration]: Found %d messages in the backlog.\n", backlog)
+	log.Printf("[calibration]: Message retention period is %d.\n", retention)
+	log.Printf("[calibration]: Setting tweet rate to %d.\n", tweetRate)
 
-	atomic.StoreInt64(&this.tweetRate, int64(retention/backlog))
+	atomic.StoreInt64(&this.tweetRate, tweetRate)
 	return nil
 }
 
