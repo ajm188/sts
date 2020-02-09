@@ -78,6 +78,42 @@ func main() {
 					return NewService(args).RunForever(twitter, sqs)
 				},
 			},
+			{
+				Name:  "batch-update",
+				Usage: "Add a batch of tweets to the queue.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "user",
+						Aliases:  []string{"u"},
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "file",
+						Aliases:  []string{"f"},
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:    "delimiter",
+						Aliases: []string{"d"},
+						Value:   "====================",
+					},
+					&cli.StringFlag{
+						Name:     "region",
+						Aliases:  []string{"r"},
+						Usage:    "",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "queue",
+						Aliases:  []string{"q"},
+						Usage:    "",
+						Required: true,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return nil
+				},
+			},
 		},
 	}
 

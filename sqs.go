@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -15,6 +17,7 @@ type SQSConfig struct {
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
 	Receive() (string, error)
+	SendAll([]string, string) error
 }
 
 type SQSImpl struct {
@@ -84,4 +87,42 @@ func (this *SQSImpl) DeleteMessage(receiptHandle *string) error {
 		},
 	)
 	return err
+}
+
+func (this *SQSImpl) SendMessageBatch(input *sqs.SendMessageBatchInput) (*sqs.SendMessageBatchOutput, error) {
+	input.QueueUrl = &this.queueURL
+	return this.sqsClient.SendMessageBatch(input)
+}
+
+func (this *SQSImpl) SendAll(messages []string, group string) error {
+	log.Printf("[sqs_sendall]: Sending %d messages in batches of 10.\n", len(messages))
+	for i := 0; i < len(messages); i += 10 {
+		entries := make([]*sqs.SendMessageBatchRequestEntry, 0)
+		for j := i; j < 10 && j < len(messages); j++ {
+			id := fmt.Sprintf("%d", i)
+			entry := &sqs.SendMessageBatchRequestEntry{
+				Id:             &id,
+				MessageGroupId: &group,
+				MessageBody:    &messages[j],
+			}
+			entries = append(entries, entry)
+		}
+		log.Println("[sqs_sendall]: Sending 10 messages to SQS.")
+		output, err := this.SendMessageBatch(&sqs.SendMessageBatchInput{
+			Entries: entries,
+		})
+		for j := 0; j < len(output.Failed); j++ {
+			batchErrorEntry := output.Failed[j]
+			id, err := strconv.Atoi(*batchErrorEntry.Id)
+			if err != nil {
+				log.Printf("[sqs_sendall_failure]: Cannot parse message id %s as int.\n", *batchErrorEntry.Id)
+				continue
+			}
+			log.Printf("[sqs_sendall]: Failed to enqueue %s\n", messages[id])
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
