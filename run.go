@@ -80,8 +80,9 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 					)
 					if timeElapsed < newTotal {
 						sleeper(timeElapsed, newTotal-timeElapsed)
+					} else {
+						log.Println("[tweet_sleep_loop]: sleep time already exceeds the new rate. Preparing a new tweet immediately.")
 					}
-					log.Println("[tweet_sleep_loop]: sleep time already exceeds the new rate. Preparing a new tweet immediately.")
 				case <-time.After(time.Duration(remainingTime) * time.Second):
 				}
 
