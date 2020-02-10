@@ -23,7 +23,7 @@ func NewService(args *RunArgs) *Service {
 
 func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 	log.Println("Performing initial calibration.")
-	err := this.Calibrate(sqsAPI)
+	_, err := this.Calibrate(sqsAPI)
 	if err != nil {
 		return err
 	}
@@ -31,11 +31,20 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 	calibrationErrors := make(chan error)
 	tweetErrors := make(chan error)
 
+	tweetWakeupChan := make(chan bool)
+
 	go func(calibrationErrors chan error) {
 		for true {
-			err := this.Calibrate(sqsAPI)
+			change, err := this.Calibrate(sqsAPI)
 			if err != nil {
 				calibrationErrors <- err
+			}
+
+			switch change {
+			case TWEET_FASTER:
+				tweetWakeupChan <- true
+			case TWEET_SLOWER:
+			default:
 			}
 
 			log.Printf("Finished calibration iteration. Sleeping for %d seconds.\n", this.calibrationRate)
@@ -52,10 +61,33 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 				}
 				tweetErrors <- err
 			}
-
 			tweetSleepTime := atomic.LoadInt64(&this.tweetRate)
 			log.Printf("Finished tweet iteration. Sleeping for %d seconds.\n", tweetSleepTime)
-			time.Sleep(time.Duration(tweetSleepTime) * time.Second)
+
+			var sleeper func(int64, int64)
+			sleeper = func(totalTimeElapsed, remainingTime int64) {
+				localStart := time.Now()
+				log.Printf("[tweet_sleep_loop]: Sleeping for up to %d seconds before tweeting again.\n", remainingTime)
+
+				select {
+				case <-tweetWakeupChan:
+					newTotal := atomic.LoadInt64(&this.tweetRate)
+					timeElapsed := int64(time.Since(localStart).Seconds()) + totalTimeElapsed
+					log.Printf(
+						"[tweet_sleep_loop]: Detected changed tweet rate. New rate is: %d. Total time slept this cycle is: %d.\n",
+						newTotal,
+						timeElapsed,
+					)
+					if timeElapsed < newTotal {
+						sleeper(timeElapsed, newTotal-timeElapsed)
+					}
+					log.Println("[tweet_sleep_loop]: sleep time already exceeds the new rate. Preparing a new tweet immediately.")
+				case <-time.After(time.Duration(remainingTime) * time.Second):
+				}
+
+				return
+			}
+			sleeper(0, tweetSleepTime)
 		}
 	}(tweetErrors)
 
@@ -74,10 +106,18 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 	return nil
 }
 
+type CalibrationChange int
+
+const (
+	TWEET_FASTER = iota
+	TWEET_SLOWER
+	TWEET_SAME
+)
+
 // Compute how long we can afford to sleep between tweets such that tweets
 // don't drop off the queue from retention policy.
 // Roughly, this is "seconds of retention" / "num messages in queue".
-func (this *Service) Calibrate(sqsAPI SQS) error {
+func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 	numMessagesAttribute := "ApproximateNumberOfMessages"
 	retentionAttribute := "MessageRetentionPeriod"
 	resp, err := sqsAPI.GetQueueAttributes(
@@ -90,7 +130,7 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 	)
 
 	if err != nil {
-		return err
+		return TWEET_SAME, err
 	}
 
 	backlogStr := *resp.Attributes["ApproximateNumberOfMessages"]
@@ -98,19 +138,28 @@ func (this *Service) Calibrate(sqsAPI SQS) error {
 
 	backlog, err := strconv.Atoi(backlogStr)
 	if err != nil {
-		return err
+		return TWEET_SAME, err
 	}
 	retention, err := strconv.Atoi(retentionStr)
 	if err != nil {
-		return err
+		return TWEET_SAME, err
 	}
 	tweetRate := int64(retention / (backlog * 10))
 	log.Printf("[calibration]: Found %d messages in the backlog.\n", backlog)
 	log.Printf("[calibration]: Message retention period is %d.\n", retention)
 	log.Printf("[calibration]: Setting tweet rate to %d.\n", tweetRate)
 
+	var change CalibrationChange
+	switch {
+	case tweetRate < this.tweetRate:
+		change = TWEET_FASTER
+	case tweetRate > this.tweetRate:
+		change = TWEET_SLOWER
+	default:
+		change = TWEET_SAME
+	}
 	atomic.StoreInt64(&this.tweetRate, tweetRate)
-	return nil
+	return change, nil
 }
 
 func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
