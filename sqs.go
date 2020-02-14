@@ -16,7 +16,7 @@ type SQSConfig struct {
 
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
-	Receive() (string, *string, error)
+	Receive() (*sqs.Message, error)
 	DeleteMessage(*string) error
 	SendAll([]string, string) error
 }
@@ -52,7 +52,7 @@ func (this *SQSImpl) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sq
 	return this.sqsClient.GetQueueAttributes(input)
 }
 
-func (this *SQSImpl) Receive() (string, *string, error) {
+func (this *SQSImpl) Receive() (*sqs.Message, error) {
 	var maxMessages int64 = 1
 	log.Printf("[sqs_receive]: Retrieving one message from %s.\n", this.queueURL)
 	resp, err := this.sqsClient.ReceiveMessage(
@@ -63,17 +63,17 @@ func (this *SQSImpl) Receive() (string, *string, error) {
 	)
 
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	messages := resp.Messages
 	if len(messages) > 0 {
 		log.Println("[sqs_receive]: Message received.")
 		message := messages[0]
-		return *message.Body, message.ReceiptHandle, nil
+		return message, nil
 	}
 	log.Println("[sqs_receive]: No message received from queue.")
-	return "", nil, nil
+	return nil, nil
 }
 
 func (this *SQSImpl) DeleteMessage(receiptHandle *string) error {

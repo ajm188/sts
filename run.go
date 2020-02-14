@@ -165,21 +165,21 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 
 func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 	log.Println("Getting a tweet from the queue.")
-	tweetText, receipt, err := sqs.Receive()
+	message, err := sqs.Receive()
 
 	if err != nil {
 		return "", err
 	}
 
-	if tweetText == "" {
+	if message == nil || *message.Body == "" {
 		log.Println("Got an empty message from the queue. Not tweeting that.")
 		return "", nil
 	}
 
-	tweet, err := twitter.Tweet(tweetText, nil)
+	tweet, err := twitter.Tweet(*message.Body, nil)
 	if err != nil {
 		return "", err
 	}
 
-	return tweet, sqs.DeleteMessage(receipt)
+	return tweet, sqs.DeleteMessage(message.ReceiptHandle)
 }
