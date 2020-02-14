@@ -171,9 +171,14 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 		return "", err
 	}
 
-	if message == nil || *message.Body == "" {
+	if message == nil {
 		log.Println("Got an empty message from the queue. Not tweeting that.")
 		return "", nil
+	}
+
+	if *message.Body == "" {
+		log.Println("Got an empty message from the queue. Not tweeting that. Still going to delete it though.")
+		return "", sqs.DeleteMessage(message.ReceiptHandle)
 	}
 
 	tweet, err := twitter.Tweet(*message.Body, nil)
