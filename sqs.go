@@ -16,7 +16,8 @@ type SQSConfig struct {
 
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
-	Receive() (string, error)
+	Receive() (string, *string, error)
+	DeleteMessage(*string) error
 	SendAll([]string, string) error
 }
 
@@ -51,7 +52,7 @@ func (this *SQSImpl) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sq
 	return this.sqsClient.GetQueueAttributes(input)
 }
 
-func (this *SQSImpl) Receive() (string, error) {
+func (this *SQSImpl) Receive() (string, *string, error) {
 	var maxMessages int64 = 1
 	log.Printf("[sqs_receive]: Retrieving one message from %s.\n", this.queueURL)
 	resp, err := this.sqsClient.ReceiveMessage(
@@ -62,24 +63,21 @@ func (this *SQSImpl) Receive() (string, error) {
 	)
 
 	if err != nil {
-		return "", nil
+		return "", nil, err
 	}
 
 	messages := resp.Messages
 	if len(messages) > 0 {
-		log.Println("[sqs_receive]: Message received. Deleting message from queue.")
+		log.Println("[sqs_receive]: Message received.")
 		message := messages[0]
-		err := this.DeleteMessage(message.ReceiptHandle)
-		if err != nil {
-			return "", err
-		}
-		return *message.Body, nil
+		return *message.Body, message.ReceiptHandle, nil
 	}
 	log.Println("[sqs_receive]: No message received from queue.")
-	return "", nil
+	return "", nil, nil
 }
 
 func (this *SQSImpl) DeleteMessage(receiptHandle *string) error {
+	log.Println("Deleting message from queue.")
 	_, err := this.sqsClient.DeleteMessage(
 		&sqs.DeleteMessageInput{
 			QueueUrl:      &this.queueURL,
