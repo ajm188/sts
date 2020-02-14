@@ -54,11 +54,13 @@ func (this *SQSImpl) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sq
 
 func (this *SQSImpl) Receive() (*sqs.Message, error) {
 	var maxMessages int64 = 1
+	sentTimestampAttribute := "SentTimestamp"
 	log.Printf("[sqs_receive]: Retrieving one message from %s.\n", this.queueURL)
 	resp, err := this.sqsClient.ReceiveMessage(
 		&sqs.ReceiveMessageInput{
 			QueueUrl:            &this.queueURL,
 			MaxNumberOfMessages: &maxMessages,
+			AttributeNames:      []*string{&sentTimestampAttribute},
 		},
 	)
 

@@ -145,9 +145,49 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 	if err != nil {
 		return TWEET_SAME, err
 	}
-	tweetRate := int64(retention / (backlog * 10))
+
+	message, err := sqsAPI.Receive()
+
+	if err != nil {
+		// This error is either:
+		// (1) intermittent, in which case the next round of calibration will
+		// run fine
+		// OR
+		// (2) permanent, in which case it will be caught in the "tweet"
+		// goroutine, and we'll consider it crash-worthy there.
+		return TWEET_SAME, nil
+	}
+
+	remainingRetention := int64(retention)
+	lastTweetEnqueueTime := int64(-1)
+	if message != nil {
+		timestampMillis, err := strconv.Atoi(*message.Attributes["SentTimestamp"])
+		if err == nil {
+			// just use the full retention window; it's probably fine, and
+			// better than crashing
+			// This assignment is technically redundant, but it makes this less
+			// confusing to read.
+			remainingRetention = int64(retention)
+		} else {
+			lastTweetEnqueueTime = int64(timestampMillis / 1000)
+			elapsedSinceLastEnqueue := time.Now().Unix() - lastTweetEnqueueTime
+			log.Printf("[calibration]: last tweet was enqueued at %s. %d seconds have passed since then.\n",
+				time.Unix(lastTweetEnqueueTime, 0).String(),
+				elapsedSinceLastEnqueue,
+			)
+			remainingRetention = int64(retention) - (time.Now().Unix() - lastTweetEnqueueTime)
+		}
+	} else {
+		log.Println("[calibration]: No messages in the queue. Using the full retention period.")
+	}
+
+	tweetRate := int64(remainingRetention / int64(backlog*10))
+
 	log.Printf("[calibration]: Found %d messages in the backlog.\n", backlog)
 	log.Printf("[calibration]: Message retention period is %d.\n", retention)
+	if lastTweetEnqueueTime > 0 {
+		log.Printf("[calibration]: Given last enqueue time of %s, %d seconds of retention remain.\n", time.Unix(lastTweetEnqueueTime, 0).String(), remainingRetention)
+	}
 	log.Printf("[calibration]: Setting tweet rate to %d.\n", tweetRate)
 
 	var change CalibrationChange
@@ -172,12 +212,12 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 	}
 
 	if message == nil {
-		log.Println("Got an empty message from the queue. Not tweeting that.")
+		log.Println("[tweet]: Didn't get a message from the queue. Nothingn to tweet.")
 		return "", nil
 	}
 
 	if *message.Body == "" {
-		log.Println("Got an empty message from the queue. Not tweeting that. Still going to delete it though.")
+		log.Println("[tweet]: Got an empty message from the queue. Not tweeting that. Still going to delete it though.")
 		return "", sqs.DeleteMessage(message.ReceiptHandle)
 	}
 
