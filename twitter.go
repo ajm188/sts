@@ -51,6 +51,9 @@ func (t *Twitter) Tweet(text string, params *twitter.StatusUpdateParams) (string
 	tweet, resp, err := t.GetStatusService().Update(text, params)
 	if err != nil {
 		switch resp.StatusCode {
+		case 186: // tweet too long
+			log.Printf("[tweet]: TWEET_TOO_LONG: %s\n", text)
+			return "", err
 		case 187:
 			// Twitter thinks this was a dupe.
 			// Log it and continue working through the queue.
