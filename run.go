@@ -110,7 +110,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 type CalibrationChange int
 
 const (
-	TWEET_FASTER = iota
+	TWEET_FASTER CalibrationChange = iota
 	TWEET_SLOWER
 	TWEET_SAME
 )
