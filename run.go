@@ -181,7 +181,7 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 		log.Println("[calibration]: No messages in the queue. Using the full retention period.")
 	}
 
-	tweetRate := int64(remainingRetention / int64(backlog*10))
+	tweetRate := remainingRetention / int64(backlog)
 
 	log.Printf("[calibration]: Found %d messages in the backlog.\n", backlog)
 	log.Printf("[calibration]: Message retention period is %d.\n", retention)
