@@ -47,21 +47,21 @@ func NewTwitter(creds *TwitterCreds) TwitterAPI {
 }
 
 func (t *Twitter) Tweet(text string, params *twitter.StatusUpdateParams) (string, error) {
-	log.Println("[tweet]: Sending tweet.")
+	log.Printf("[tweet]: Sending tweet: %s\n", text)
 	tweet, resp, err := t.GetStatusService().Update(text, params)
 	if err != nil {
-		switch resp.StatusCode {
-		case 186: // tweet too long
-			log.Printf("[tweet]: TWEET_TOO_LONG: %s\n", text)
-			return "", err
-		case 187:
-			// Twitter thinks this was a dupe.
-			// Log it and continue working through the queue.
-			log.Printf("[tweet]: DUPE FOUND -- %s\n", text)
-			return text, nil
-		default:
-			return "", err
-		}
+		log.Printf("%T\n, err")
 	}
-	return tweet.FullText, nil
+	switch resp.StatusCode {
+	case 186: // tweet too long
+		log.Printf("[tweet]: TWEET_TOO_LONG: %s\n", text)
+		return "", err
+	case 187:
+		// Twitter thinks this was a dupe.
+		// Log it and continue working through the queue.
+		log.Printf("[tweet]: DUPE FOUND -- %s\n", text)
+		return text, err
+	default:
+		return tweet.FullText, err
+	}
 }
