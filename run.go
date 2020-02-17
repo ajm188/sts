@@ -200,22 +200,26 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 	return change, nil
 }
 
-func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
+func (this *Service) Tweet(twitter TwitterAPI, sqsAPI SQS) (string, error) {
 	log.Println("Getting a tweet from the queue.")
-	message, err := sqs.Receive()
+	msg, err := Retry(
+		func() (interface{}, error) {
+			return sqsAPI.Receive(map[string]bool{"log": false})
+		},
+		&BasicRetrier{delayMillis: 50, maxAttempts: 500, description: "SQS ReceiveMessage()"},
+	)
 
 	if err != nil {
 		return "", err
 	}
-
-	if message == nil {
-		log.Println("[tweet]: Didn't get a message from the queue. Nothing to tweet.")
+	if msg == nil {
 		return "", nil
 	}
 
+	message := msg.(*sqs.Message)
 	if *message.Body == "" {
 		log.Println("[tweet]: Got an empty message from the queue. Not tweeting that. Still going to delete it though.")
-		return "", sqs.DeleteMessage(message.ReceiptHandle)
+		return "", sqsAPI.DeleteMessage(message.ReceiptHandle)
 	}
 
 	tweet, err := twitter.Tweet(*message.Body, nil)
@@ -223,5 +227,5 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 		return "", err
 	}
 
-	return tweet, sqs.DeleteMessage(message.ReceiptHandle)
+	return tweet, sqsAPI.DeleteMessage(message.ReceiptHandle)
 }
