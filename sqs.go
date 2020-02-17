@@ -53,7 +53,22 @@ func (this *SQSImpl) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sq
 }
 
 func (this *SQSImpl) Receive() (*sqs.Message, error) {
-	var maxMessages int64 = 1
+	/* Why is this number 20, even though we only want the first message? Well, ...
+	* From Amazon's docs:
+	* > Short poll is the default behavior where a weighted random set of
+	* > machines is sampled on a ReceiveMessage call. Thus, only the messages
+	* > on the sampled machines are returned. If the number of messages in the
+	* > queue is small (fewer than 1,000), you most likely get fewer messages
+	* > than you requested per ReceiveMessage call. If the number of messages
+	* > in the queue is extremely small, you might not receive any messages in
+	* > a particular ReceiveMessage response. If this happens, repeat the request.
+	*
+	* I initially implemented some retry logic, but it looked really gross. So,
+	* I figured, if you receive _less_ than the amount you asked, then asking
+	* for 10 when you only want 1 seems like a reasonable workaround. We're
+	* only going to use (and later delete) the first message anyway.
+	 */
+	var maxMessages int64 = 10
 	sentTimestampAttribute := "SentTimestamp"
 	log.Printf("[sqs_receive]: Retrieving one message from %s.\n", this.queueURL)
 	resp, err := this.sqsClient.ReceiveMessage(
