@@ -146,7 +146,9 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 		return TWEET_SAME, err
 	}
 
-	message, err := sqsAPI.Receive()
+	message, err := sqsAPI.Receive(map[string]bool{})
+	remainingRetention := int64(retention)
+	lastTweetEnqueueTime := int64(-1)
 
 	if err != nil {
 		// This error is either:
@@ -156,11 +158,8 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 		// (2) permanent, in which case it will be caught in the "tweet"
 		// goroutine, and we'll consider it crash-worthy there.
 		return TWEET_SAME, nil
-	}
-
-	remainingRetention := int64(retention)
-	lastTweetEnqueueTime := int64(-1)
-	if message != nil {
+		log.Println("[calibration]: No messages in the queue. Using the full retention period.")
+	} else {
 		timestampMillis, err := strconv.Atoi(*message.Attributes["SentTimestamp"])
 		if err == nil {
 			// just use the full retention window; it's probably fine, and
@@ -177,8 +176,6 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 			)
 			remainingRetention = int64(retention) - (time.Now().Unix() - lastTweetEnqueueTime)
 		}
-	} else {
-		log.Println("[calibration]: No messages in the queue. Using the full retention period.")
 	}
 
 	tweetRate := remainingRetention / int64(backlog)
