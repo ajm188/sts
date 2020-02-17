@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -16,7 +17,7 @@ type SQSConfig struct {
 
 type SQS interface {
 	GetQueueAttributes(*sqs.GetQueueAttributesInput) (*sqs.GetQueueAttributesOutput, error)
-	Receive() (*sqs.Message, error)
+	Receive(map[string]bool) (*sqs.Message, error)
 	DeleteMessage(*string) error
 	SendAll([]string, string) error
 }
@@ -52,10 +53,19 @@ func (this *SQSImpl) GetQueueAttributes(input *sqs.GetQueueAttributesInput) (*sq
 	return this.sqsClient.GetQueueAttributes(input)
 }
 
-func (this *SQSImpl) Receive() (*sqs.Message, error) {
+func (this *SQSImpl) Receive(opts map[string]bool) (*sqs.Message, error) {
+	var shouldLog bool
+	if _log, ok := opts["log"]; ok {
+		shouldLog = _log
+	} else {
+		shouldLog = true
+	}
+
 	var maxMessages int64 = 1
 	sentTimestampAttribute := "SentTimestamp"
-	log.Printf("[sqs_receive]: Retrieving one message from %s.\n", this.queueURL)
+	if shouldLog {
+		log.Printf("[sqs_receive]: Retrieving one message from %s.\n", this.queueURL)
+	}
 	resp, err := this.sqsClient.ReceiveMessage(
 		&sqs.ReceiveMessageInput{
 			QueueUrl:            &this.queueURL,
@@ -70,12 +80,16 @@ func (this *SQSImpl) Receive() (*sqs.Message, error) {
 
 	messages := resp.Messages
 	if len(messages) > 0 {
-		log.Println("[sqs_receive]: Message received.")
+		if shouldLog {
+			log.Println("[sqs_receive]: Message received.")
+		}
 		message := messages[0]
 		return message, nil
 	}
-	log.Println("[sqs_receive]: No message received from queue.")
-	return nil, nil
+	if shouldLog {
+		log.Println("[sqs_receive]: No message received from queue.")
+	}
+	return nil, errors.New("No message received from queue.")
 }
 
 func (this *SQSImpl) DeleteMessage(receiptHandle *string) error {
