@@ -3,22 +3,32 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
 func Purge(sqsAPI SQS) error {
 	reader := bufio.NewReader(os.Stdin)
 	stop := false
 	for !stop {
-		message, err := sqsAPI.Receive()
+		log.Println("Getting a message from the queue.")
+		msg, err := Retry(
+			func() (interface{}, error) {
+				return sqsAPI.Receive(map[string]bool{"log": false})
+			},
+			&BasicRetrier{delayMillis: 50, maxAttempts: 500, description: "SQS ReceiveMessage()"},
+		)
 		if err != nil {
 			return err
 		}
 
-		if message == nil {
+		if msg == nil {
 			continue
 		}
+		message := msg.(*sqs.Message)
 		for true {
 			fmt.Printf("Next message in queue:\n%s\n=> Purge? [yes/no]: ", *message.Body)
 			text, _ := reader.ReadString('\n')
