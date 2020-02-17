@@ -129,6 +129,38 @@ func main() {
 					return BatchUpdate(sqs, tweetSource, args.user)
 				},
 			},
+			{
+				Name:  "purge",
+				Usage: "Delete messages from the queue.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "region",
+						Aliases:  []string{"r"},
+						Usage:    "",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "queue",
+						Aliases:  []string{"q"},
+						Usage:    "",
+						Required: true,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					args, err := ParsePurgeArgs(c)
+					if err != nil {
+						return err
+					}
+
+					log.Println("Initializing API components.")
+					sqs, err := NewSQS(args.sqs)
+					if err != nil {
+						return err
+					}
+
+					return Purge(sqs)
+				},
+			},
 		},
 	}
 

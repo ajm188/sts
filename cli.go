@@ -66,3 +66,14 @@ func ParseBatchUpdateArgs(c *cli.Context) (*BatchUpdateArgs, error) {
 		delimiter: delimiter,
 	}, nil
 }
+
+type PurgeArgs struct {
+	sqs *SQSConfig
+}
+
+func ParsePurgeArgs(c *cli.Context) (*PurgeArgs, error) {
+	sqsConfig := getSQSConfig(c)
+	return &PurgeArgs{
+		sqs: sqsConfig,
+	}, nil
+}
