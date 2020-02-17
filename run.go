@@ -212,7 +212,7 @@ func (this *Service) Tweet(twitter TwitterAPI, sqs SQS) (string, error) {
 	}
 
 	if message == nil {
-		log.Println("[tweet]: Didn't get a message from the queue. Nothingn to tweet.")
+		log.Println("[tweet]: Didn't get a message from the queue. Nothing to tweet.")
 		return "", nil
 	}
 
