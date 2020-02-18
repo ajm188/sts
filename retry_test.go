@@ -2,8 +2,14 @@ package main
 
 import (
 	"errors"
+	"io/ioutil"
+	"log"
 	"testing"
 )
+
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
 
 func TestRetry(t *testing.T) {
 	count := 0
