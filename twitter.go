@@ -50,7 +50,7 @@ func (t *Twitter) Tweet(text string, params *twitter.StatusUpdateParams) (string
 	log.Printf("[tweet]: Sending tweet: %s\n", text)
 	tweet, resp, err := t.GetStatusService().Update(text, params)
 	if err != nil {
-		log.Printf("%T\n, err")
+		log.Printf("%T\n", err)
 	}
 	switch resp.StatusCode {
 	case 186: // tweet too long
