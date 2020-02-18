@@ -25,7 +25,7 @@ func Retry(f func() (interface{}, error), retrier Retrier) (interface{}, error) 
 		time.Sleep(time.Duration(retrier.NextDelayMillis(attempt)) * time.Millisecond)
 	}
 
-	return nil, nil
+	return nil, err
 }
 
 type BasicRetrier struct {
