@@ -1,12 +1,24 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"path"
 
 	"github.com/urfave/cli/v2"
 )
+
+type STSContextKey string
+
+const (
+	STANDARD_LOGGING_FLAGS = log.Ldate | log.LUTC | log.Lmicroseconds | log.Lshortfile
+)
+
+func getLogger() *log.Logger {
+	logger := log.New(os.Stdout, "", STANDARD_LOGGING_FLAGS)
+	return logger
+}
 
 func main() {
 	workDir, err := os.Getwd()
@@ -75,7 +87,8 @@ func main() {
 
 					log.Println("Running forever ....")
 
-					return NewService(args).RunForever(twitter, sqs)
+					ctx := context.WithValue(context.Background(), STSContextKey("logger"), getLogger())
+					return NewService(args).RunForever(ctx, twitter, sqs)
 				},
 			},
 			{
@@ -126,7 +139,8 @@ func main() {
 						filename:  args.filename,
 						delimiter: args.delimiter,
 					}
-					return BatchUpdate(sqs, tweetSource, args.user)
+					ctx := context.WithValue(context.Background(), STSContextKey("logger"), getLogger())
+					return BatchUpdate(ctx, sqs, tweetSource, args.user)
 				},
 			},
 			{
@@ -158,7 +172,8 @@ func main() {
 						return err
 					}
 
-					return Purge(sqs)
+					ctx := context.WithValue(context.Background(), STSContextKey("logger"), getLogger())
+					return Purge(ctx, sqs)
 				},
 			},
 		},

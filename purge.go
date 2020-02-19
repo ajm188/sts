@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,11 +11,16 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 )
 
-func Purge(sqsAPI SQS) error {
+func Purge(ctx context.Context, sqsAPI SQS) error {
+	logger, ok := ctx.Value(STSContextKey("logger")).(*log.Logger)
+	if !ok {
+		return NoLoggerInContext()
+	}
+
 	reader := bufio.NewReader(os.Stdin)
 	stop := false
 	for !stop {
-		log.Println("Getting a message from the queue.")
+		logger.Println("Getting a message from the queue.")
 		msg, err := Retry(
 			func() (interface{}, error) {
 				return sqsAPI.Receive(map[string]bool{"log": false})
@@ -42,7 +48,7 @@ func Purge(sqsAPI SQS) error {
 				}
 				break
 			case "no":
-				fmt.Printf("Not purging. Since queue is FIFO, exiting now.\n")
+				logger.Printf("Not purging. Since queue is FIFO, exiting now.\n")
 				return nil
 			default:
 				fmt.Printf("Was expecting 'yes' or 'no'. Got '%s'.\n", text)

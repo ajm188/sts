@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"strconv"
 	"sync/atomic"
@@ -21,8 +22,12 @@ func NewService(args *RunArgs) *Service {
 	}
 }
 
-func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
-	log.Println("Performing initial calibration.")
+func (this *Service) RunForever(ctx context.Context, twitter TwitterAPI, sqsAPI SQS) error {
+	logger, ok := ctx.Value(STSContextKey("logger")).(*log.Logger)
+	if !ok {
+		return NoLoggerInContext()
+	}
+	logger.Println("Performing initial calibration.")
 	_, err := this.Calibrate(sqsAPI)
 	if err != nil {
 		return err
@@ -47,7 +52,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 			default:
 			}
 
-			log.Printf("Finished calibration iteration. Sleeping for %d seconds.\n", this.calibrationRate)
+			logger.Printf("Finished calibration iteration. Sleeping for %d seconds.\n", this.calibrationRate)
 			time.Sleep(time.Duration(this.calibrationRate) * time.Second)
 		}
 	}(calibrationErrors)
@@ -62,18 +67,18 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 				tweetErrors <- err
 			}
 			tweetSleepTime := atomic.LoadInt64(&this.tweetRate)
-			log.Printf("Finished tweet iteration. Sleeping for %d seconds.\n", tweetSleepTime)
+			logger.Printf("Finished tweet iteration. Sleeping for %d seconds.\n", tweetSleepTime)
 
 			var sleeper func(int64, int64)
 			sleeper = func(totalTimeElapsed, remainingTime int64) {
 				localStart := time.Now()
-				log.Printf("[tweet_sleep_loop]: Sleeping for up to %d seconds before tweeting again.\n", remainingTime)
+				logger.Printf("[tweet_sleep_loop]: Sleeping for up to %d seconds before tweeting again.\n", remainingTime)
 
 				select {
 				case <-tweetWakeupChan:
 					newTotal := atomic.LoadInt64(&this.tweetRate)
 					timeElapsed := int64(time.Since(localStart).Seconds()) + totalTimeElapsed
-					log.Printf(
+					logger.Printf(
 						"[tweet_sleep_loop]: Detected changed tweet rate. New rate is: %d. Total time slept this cycle is: %d.\n",
 						newTotal,
 						timeElapsed,
@@ -81,7 +86,7 @@ func (this *Service) RunForever(twitter TwitterAPI, sqsAPI SQS) error {
 					if timeElapsed < newTotal {
 						sleeper(timeElapsed, newTotal-timeElapsed)
 					} else {
-						log.Println("[tweet_sleep_loop]: sleep time already exceeds the new rate. Preparing a new tweet immediately.")
+						logger.Println("[tweet_sleep_loop]: sleep time already exceeds the new rate. Preparing a new tweet immediately.")
 					}
 				case <-time.After(time.Duration(remainingTime) * time.Second):
 				}
