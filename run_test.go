@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -29,7 +30,7 @@ func (this *FakeSQS) GetQueueAttributes(in *sqs.GetQueueAttributesInput) (*sqs.G
 	return out, nil
 }
 
-func (this *FakeSQS) Receive(opts map[string]bool) (*sqs.Message, error) {
+func (this *FakeSQS) Receive(ctx context.Context) (*sqs.Message, error) {
 	if this.shouldErrorOnReceive {
 		return nil, errors.New("")
 	}
@@ -89,7 +90,7 @@ func TestCalibrate(t *testing.T) {
 	}
 
 	for _, test := range testTables {
-		change, err := service.Calibrate(test.sqs)
+		change, err := service.Calibrate(context.Background(), test.sqs)
 		if test.shouldError {
 			if err == nil {
 				t.Errorf("Expected an error but got none.")
