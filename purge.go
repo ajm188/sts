@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -21,9 +22,12 @@ func Purge(ctx context.Context, sqsAPI SQS) error {
 	stop := false
 	for !stop {
 		logger.Println("Getting a message from the queue.")
+		childLogger := getLogger()
+		childLogger.SetOutput(ioutil.Discard)
+		childCtx := context.WithValue(ctx, STSContextKey("logger"), childLogger)
 		msg, err := Retry(
 			func() (interface{}, error) {
-				return sqsAPI.Receive(map[string]bool{"log": false})
+				return sqsAPI.Receive(childCtx)
 			},
 			&BasicRetrier{delayMillis: 50, maxAttempts: 500, description: "SQS ReceiveMessage()"},
 		)

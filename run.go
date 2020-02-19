@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io/ioutil"
 	"log"
 	"strconv"
 	"sync/atomic"
@@ -28,7 +29,7 @@ func (this *Service) RunForever(ctx context.Context, twitter TwitterAPI, sqsAPI 
 		return NoLoggerInContext()
 	}
 	logger.Println("Performing initial calibration.")
-	_, err := this.Calibrate(sqsAPI)
+	_, err := this.Calibrate(ctx, sqsAPI)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,7 @@ func (this *Service) RunForever(ctx context.Context, twitter TwitterAPI, sqsAPI 
 
 	go func(calibrationErrors chan error) {
 		for true {
-			change, err := this.Calibrate(sqsAPI)
+			change, err := this.Calibrate(ctx, sqsAPI)
 			if err != nil {
 				calibrationErrors <- err
 			}
@@ -59,7 +60,7 @@ func (this *Service) RunForever(ctx context.Context, twitter TwitterAPI, sqsAPI 
 
 	go func(tweetErrors chan error) {
 		for true {
-			tweet, err := this.Tweet(twitter, sqsAPI)
+			tweet, err := this.Tweet(ctx, twitter, sqsAPI)
 			if err != nil {
 				if tweet != "" {
 					// TODO: log the tweet text so we don't lose it forever
@@ -123,7 +124,7 @@ const (
 // Compute how long we can afford to sleep between tweets such that tweets
 // don't drop off the queue from retention policy.
 // Roughly, this is "seconds of retention" / "num messages in queue".
-func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
+func (this *Service) Calibrate(ctx context.Context, sqsAPI SQS) (CalibrationChange, error) {
 	numMessagesAttribute := "ApproximateNumberOfMessages"
 	retentionAttribute := "MessageRetentionPeriod"
 	resp, err := sqsAPI.GetQueueAttributes(
@@ -151,7 +152,7 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 		return TWEET_SAME, err
 	}
 
-	message, err := sqsAPI.Receive(map[string]bool{})
+	message, err := sqsAPI.Receive(ctx)
 	remainingRetention := int64(retention)
 	lastTweetEnqueueTime := int64(-1)
 
@@ -205,11 +206,18 @@ func (this *Service) Calibrate(sqsAPI SQS) (CalibrationChange, error) {
 	return change, nil
 }
 
-func (this *Service) Tweet(twitter TwitterAPI, sqsAPI SQS) (string, error) {
-	log.Println("Getting a tweet from the queue.")
+func (this *Service) Tweet(ctx context.Context, twitter TwitterAPI, sqsAPI SQS) (string, error) {
+	logger, ok := ctx.Value(STSContextKey("logger")).(*log.Logger)
+	if !ok {
+		return "", NoLoggerInContext()
+	}
+	logger.Println("Getting a tweet from the queue.")
+	childLogger := getLogger()
+	childLogger.SetOutput(ioutil.Discard)
+	childCtx := context.WithValue(ctx, STSContextKey("logger"), childLogger)
 	msg, err := Retry(
 		func() (interface{}, error) {
-			return sqsAPI.Receive(map[string]bool{"log": false})
+			return sqsAPI.Receive(childCtx)
 		},
 		&BasicRetrier{delayMillis: 50, maxAttempts: 500, description: "SQS ReceiveMessage()"},
 	)
