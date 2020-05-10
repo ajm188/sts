@@ -108,7 +108,7 @@ func main() {
 					&cli.StringFlag{
 						Name:    "delimiter",
 						Aliases: []string{"d"},
-						Value:   "====================",
+						Value:   "====================\n",
 					},
 					&cli.StringFlag{
 						Name:     "region",
